@@ -278,6 +278,7 @@ function enableTextEditing(){
 
   document.getElementById('updateHTMLBtn').style.display = 'block';
   document.getElementById('saveChangesBtn').style.display = 'block';
+  document.getElementById('cancelEditBtn').style.display = 'block';
 
   // Start text editing
   const sel='*:not(script):not(style):not(noscript):not(head):not(title):not(meta):not(link)';
