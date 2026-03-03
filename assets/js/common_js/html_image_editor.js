@@ -549,7 +549,7 @@ function createButton(text,id,handler){
   btn.addEventListener('click',handler);
   btn.classList.add('button-29')
 
-  if (text != "Enable Text Editing") {
+  if (text != "Enable Edit Mode") {
     btn.style ='display:none'
   };
 
