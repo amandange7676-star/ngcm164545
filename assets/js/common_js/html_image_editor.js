@@ -546,11 +546,29 @@ if (window.imageChangeLog && imageChangeLog.size > 0) {
     imageChangeLog.clear();
 }
 document.getElementById('rollback').style.display = 'block';
+    
 
   showCustomAlertBox('success', 'All modified files deploy.');
   console.log(" All modified files deploy.");
 }
+function disableEditMode(){
 
+    document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
+        el.contentEditable="false";
+        el.style.outline="none";
+        el.style.cursor="default";
+    });
+
+    $('.editable').removeClass('editable');
+    $('.editable-image').removeClass('editable-image');
+    $('.updateImg').removeClass('updateImg');
+    $('#wrapper').removeClass('editableSection');
+
+    document.getElementById('updateHTMLBtn').style.display = 'none';
+    document.getElementById('saveChangesBtn').style.display = 'none';
+
+    showCustomAlertBox('success', 'Edit mode disabled.');
+}
 /* =========================================================
    UI BUTTONS
 ========================================================= */
@@ -576,8 +594,9 @@ function createButtons(){
   // const downloadBtn=createButton('Download Updated Files','downloadBtn',downloadAllUpdatedFiles);
   const saveChangesBtn=createButton('Publish Changes','saveChangesBtn',saveAndPushChanges);
   const rollback=createButton('rollback changes','rollback');
+    const cancelBtn = createButton('Cancel Edit Mode','cancelEditBtn',disableEditMode);
 
-  [enableEditingBtn,updateHTMLBtn,rollback,saveChangesBtn].forEach(b=>buttonContainer.appendChild(b));
+  [enableEditingBtn,updateHTMLBtn,rollback,saveChangesBtn,cancelBtn].forEach(b=>buttonContainer.appendChild(b));
   document.body.prepend(buttonContainer);
 }
 
