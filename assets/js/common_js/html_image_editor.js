@@ -16,6 +16,86 @@ window.addEventListener("message", (event) => {
     }
 });
 
+
+// ==============start of loader code========================
+
+function showProjectLoader(message = "Uploading changes, please wait…") {
+    // If loader already exists, just update message and show
+    let loader = $('#project-loader');
+    if (!loader.length) {
+        // Create the loader dynamically
+        loader = $(`
+            <div id="project-loader">
+                <div class="pl-circle"></div>
+                <div class="pl-text">${message}</div>
+            </div>
+        `).appendTo('body');
+
+        // Inject CSS dynamically if not present
+        if (!$('#project-loader-styles').length) {
+            const css = `
+                #project-loader {
+                    position: fixed;
+                    top: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 100%;
+                    background: #0f172ae3;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    flex-direction: column;
+                    z-index: 99999;
+                    opacity: 0;
+                    pointer-events: none;
+                    transition: opacity 0.4s ease;
+                }
+
+                #project-loader.active {
+                    opacity: 1;
+                    pointer-events: all;
+                }
+
+                .pl-circle {
+                    width: 80px;
+                    height: 80px;
+                    border: 6px solid #64748b;
+                    border-top-color: #38bdf8;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin-bottom: 12px;
+                }
+
+                .pl-text {
+                    color: #e2e8f0;
+                    font-size: 18px;
+                    letter-spacing: 1px;
+                    font-family: sans-serif;
+                }
+
+                @keyframes spin {
+                    to { transform: rotate(360deg); }
+                }
+            `;
+            $('<style>', { id: 'project-loader-styles', text: css }).appendTo('head');
+        }
+    }
+
+    // Update message and show
+    loader.find('.pl-text').text(message);
+    loader.addClass('active');
+}
+
+function hideProjectLoader() {
+    const loader = $('#project-loader');
+    loader.removeClass('active');
+}
+
+// ==============end of loader========================
+
+
+
+
 // ==============Custom alert========================
 function injectCustomAlertCSS() {
     if (document.getElementById('custom-alert-style')) return;
@@ -308,7 +388,7 @@ function enableTextEditing(){
     });
     window.MO.observe(document.body,{characterData:true,subtree:true});
   }
-  showCustomAlertBox('success', 'Editing enabled for all visible text elements.');
+  // showCustomAlertBox('success', 'Editing enabled for all visible text elements.');
   console.log(" Editing enabled for all visible text elements.");
 
   // End text editing
@@ -466,93 +546,119 @@ function downloadAllUpdatedFiles(){
    PUSH TO GITHUB
 ========================================================= */
 async function saveAndPushChanges(){
+
   if(!modifiedHTML || !(modifiedHTML instanceof Map)){
     showCustomAlertBox('error', 'No modified files detected.');
-    console.log("No modified files detected.");
     return;
   }
 
-  const OWNER=localStorage.getItem('owner');
-  const REPO=localStorage.getItem('repo_name');
-  const BRANCH="main";
-  const token=localStorage.getItem('feature_key');
-  const headers={
-    "Authorization":`token ${token}`,
-    "Accept":"application/vnd.github.v3+json",
-    "Content-Type":"application/json"
+  const OWNER = localStorage.getItem('owner');
+  const REPO = localStorage.getItem('repo_name');
+  const BRANCH = "main";
+  const token = localStorage.getItem('feature_key');
+
+  const headers = {
+    "Authorization": `token ${token}`,
+    "Accept": "application/vnd.github.v3+json",
+    "Content-Type": "application/json"
   };
 
-  for(const [filePath,html] of modifiedHTML.entries()){
-    try{
-      const getUrl=`https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`;
-      const fileData=await fetch(getUrl,{headers}).then(r=>r.json());
-      if(!fileData.sha) throw new Error("SHA not found for "+filePath);
+  //  SHOW LOADER ONCE
+  showProjectLoader("Uploading changes, please wait…");
 
-      const payload={
-        message:`Update ${filePath} via browser editor`,
-        content:btoa(unescape(encodeURIComponent(html))),
-        branch:BRANCH,
-        sha:fileData.sha
-      };
+  try {
 
-      const response=await fetch(getUrl,{
-        method:"PUT",headers,body:JSON.stringify(payload)
-      });
+    // ================= PUSH HTML FILES =================
+    for(const [filePath, html] of modifiedHTML.entries()){
+      try{
 
-      if(response.ok){
-        console.log(` ${filePath} pushed.`);
-      } else {
-        console.error(` Failed to push ${filePath}`, await response.json());
+        const getUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${filePath}`;
+        const fileData = await fetch(getUrl,{headers}).then(r=>r.json());
+        if(!fileData.sha) throw new Error("SHA not found for "+filePath);
+
+        const payload = {
+          message:`Update ${filePath} via browser editor`,
+          content:btoa(unescape(encodeURIComponent(html))),
+          branch:BRANCH,
+          sha:fileData.sha
+        };
+
+        const response = await fetch(getUrl,{
+          method:"PUT",
+          headers,
+          body:JSON.stringify(payload)
+        });
+
+        if(response.ok){
+          console.log(`${filePath} pushed.`);
+        } else {
+          console.error(`Failed to push ${filePath}`);
+        }
+
+      }catch(err){
+        console.error("HTML push error:",err);
       }
-    }catch(err){
-      console.error("push error:",err);
     }
-  }
-    // ================= PUSH STAGED IMAGES =================
-if (window.imageChangeLog && imageChangeLog.size > 0) {
 
-    for (const [repoImagePath, data] of imageChangeLog.entries()) {
+    // ================= PUSH STAGED IMAGES =================
+    if (window.imageChangeLog && imageChangeLog.size > 0) {
+
+      for (const [repoImagePath, data] of imageChangeLog.entries()) {
 
         try {
 
-            const base64 = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.readAsDataURL(data.file);
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-            });
+          const base64 = await new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(data.file);
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+          });
 
-            const getUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${repoImagePath}`;
-            const fileData = await fetch(getUrl, { headers }).then(r => r.json());
+          const getUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${repoImagePath}`;
+          const fileData = await fetch(getUrl, { headers }).then(r => r.json());
 
-            const payload = {
-                message: `Update ${repoImagePath} via browser editor`,
-                content: base64.split(",")[1],
-                branch: BRANCH,
-                sha: fileData.sha
-            };
+          const payload = {
+            message: `Update ${repoImagePath} via browser editor`,
+            content: base64.split(",")[1],
+            branch: BRANCH,
+            sha: fileData.sha
+          };
 
-            await fetch(getUrl, {
-                method: "PUT",
-                headers,
-                body: JSON.stringify(payload)
-            });
+          await fetch(getUrl, {
+            method: "PUT",
+            headers,
+            body: JSON.stringify(payload)
+          });
 
-            console.log("Image pushed:", repoImagePath);
+          console.log("Image pushed:", repoImagePath);
 
         } catch (err) {
-            console.error("Image push failed:", repoImagePath, err);
+          console.error("Image push failed:", repoImagePath, err);
         }
+      }
+
+      imageChangeLog.clear();
     }
 
-    imageChangeLog.clear();
-}
-document.getElementById('rollback').style.display = 'block';
-    
+    document.getElementById('rollback').style.display = 'block';
 
-  showCustomAlertBox('success', 'All modified files deploy.');
-  console.log(" All modified files deploy.");
+    showCustomAlertBox('success', 'All changes deployed successfully.');
+
+  } 
+  catch (globalError) {
+
+    console.error("Global push error:", globalError);
+    showCustomAlertBox('error', 'Something went wrong while deploying.');
+
+  } 
+  finally {
+    // ALWAYS HIDE LOADER (even if error happens)
+    hideProjectLoader();
+
+  }
 }
+
+
 function disableEditMode(){
 
     document.querySelectorAll('[contenteditable="true"]').forEach(el=>{
@@ -571,7 +677,7 @@ function disableEditMode(){
     document.getElementById('cancelEditBtn').style.display = 'none';
     document.getElementById('enableEditingBtn').style.display = 'block';
 
-    showCustomAlertBox('success', 'Edit mode disabled.');
+    // showCustomAlertBox('success', 'Edit mode disabled.');
 }
 /* =========================================================
    UI BUTTONS
