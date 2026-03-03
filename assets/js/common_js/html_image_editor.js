@@ -640,7 +640,7 @@ async function saveAndPushChanges(){
       imageChangeLog.clear();
     }
 
-    document.getElementById('rollback').style.display = 'block';
+    // document.getElementById('rollback').style.display = 'block';
 
     showCustomAlertBox('success', 'All changes deployed successfully.');
 
@@ -675,6 +675,7 @@ function disableEditMode(){
     document.getElementById('updateHTMLBtn').style.display = 'none';
     document.getElementById('saveChangesBtn').style.display = 'none';
     document.getElementById('cancelEditBtn').style.display = 'none';
+    // document.getElementById('rollback').style.display = 'none';
     document.getElementById('enableEditingBtn').style.display = 'block';
 
     // showCustomAlertBox('success', 'Edit mode disabled.');
