@@ -277,6 +277,7 @@ function resolveEditableElementFromTextNode(node){
 function enableTextEditing(){
 
   document.getElementById('updateHTMLBtn').style.display = 'block';
+  document.getElementById('enableEditingBtn').style.display = 'none';
   document.getElementById('saveChangesBtn').style.display = 'block';
   document.getElementById('cancelEditBtn').style.display = 'block';
 
@@ -567,6 +568,7 @@ function disableEditMode(){
 
     document.getElementById('updateHTMLBtn').style.display = 'none';
     document.getElementById('saveChangesBtn').style.display = 'none';
+    document.getElementById('enableEditingBtn').style.display = 'block';
 
     showCustomAlertBox('success', 'Edit mode disabled.');
 }
