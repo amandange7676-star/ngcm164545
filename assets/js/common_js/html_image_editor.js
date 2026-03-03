@@ -520,9 +520,9 @@ window.saveAndPushChanges=saveAndPushChanges;
 window.updateOriginalHTMLWithTextChanges=updateOriginalHTMLWithTextChanges;
 window.downloadAllUpdatedFiles=downloadAllUpdatedFiles;
 
-// document.addEventListener('DOMContentLoaded', function () {
-//   if (localStorage.getItem("featureEnabled")==="load buttons") createButtons();
-// });
+document.addEventListener('DOMContentLoaded', function () {
+  if (localStorage.getItem("featureEnabled")==="load buttons") createButtons();
+});
 
 function createButtons(){
   const buttonContainer=document.createElement('div');
