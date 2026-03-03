@@ -1,4 +1,6 @@
 $(document).ready(function () {
+    // ================= IMAGE STAGING SYSTEM =================
+window.imageChangeLog = new Map();
 // ==============Custom alert========================
 function injectCustomAlertCSS() {
     if (document.getElementById('custom-alert-style')) return;
@@ -214,71 +216,53 @@ function showCustomAlertBox(type = 'error', message = 'Something went wrong', on
 
     // Upload image to GitHub
     async function uploadImgData() {
-        const fileInput = $("#image-upload")[0];
-        const file = fileInput.files[0];
-        if (!file) {
-           showCustomAlertBox('error', 'No file selected!');
-           console.log("No file selected!");
-            return
-        }
-           
 
-        const imgName = $(".formFieldFileName").val();
-        const element = $("#image-upload").data("imageElement");
+    const fileInput = $("#image-upload")[0];
+    const file = fileInput.files[0];
 
-        // Convert to base64
-        const base64 = await toBase64(file);
-        const repoImagePath = extractRepoPath(imgName);
-
-        if (!repoImagePath) {
-            showCustomAlertBox('error', 'Unable to determine  path for image!');
-            console.log("Unable to determine  path for image!");
-            return;
-        }
-
-        // Get latest SHA from GitHub
-        const sha = await getLatestSha(repoImagePath);
-        const commitMessage = `Update ${repoImagePath} via web editor`;
-
-        // Upload to GitHub
-        const response = await fetch(
-            `https://api.github.com/repos/${repoOwner}/${repoName}/contents/${repoImagePath}`,
-            {
-                method: "PUT",
-                headers: {
-                    Authorization: `token ${token}`,
-                    Accept: "application/vnd.github+json",
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({
-                    message: commitMessage,
-                    content: base64.split(",")[1],
-                    sha: sha,
-                    branch: branch,
-                }),
-            }
-        );
-
-        const result = await response.json();
-
-        if (result.content && result.commit) {
-            console.log("image updated:", repoImagePath);
-
-            // Update image on page with cache-busting
-            const newSrc = `${imgName}?${Date.now()}`;
-            if (element.tagName === "IMG") {
-                $(element).attr("src", newSrc);
-            } else {
-                $(element).css("background-image", `url(${newSrc})`);
-            }
-            showCustomAlertBox('success', 'Image updated !');
-            console.log("Image updated !");
-        } else {
-            showCustomAlertBox('error', 'Upload failed: ' + (result.message || "Unknown error"));
-            console.log("Upload failed: " + (result.message || "Unknown error"));
-        }
-
-        // Reset file input
-        fileInput.value = "";
+    if (!file) {
+        showCustomAlertBox('error', 'No file selected!');
+        return;
     }
+
+    const imgName = $(".formFieldFileName").val();
+    const element = $("#image-upload").data("imageElement");
+
+    const repoImagePath = extractRepoPath(imgName);
+
+    if (!repoImagePath) {
+        showCustomAlertBox('error', 'Unable to determine path for image!');
+        return;
+    }
+
+    // ================= STORE IMAGE LOCALLY ONLY =================
+    imageChangeLog.set(repoImagePath, {
+        file: file,
+        element: element,
+        originalSrc: imgName
+    });
+
+    // ================= LOCAL PREVIEW =================
+    const previewURL = URL.createObjectURL(file);
+
+    if (element.tagName === "IMG") {
+        $(element).attr("src", previewURL);
+        $(element).css({
+            width: "100%",
+            height: "100%",
+            objectFit: "cover"
+        });
+    } else {
+        $(element).css({
+            backgroundImage: `url(${previewURL})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundRepeat: "no-repeat"
+        });
+    }
+
+    showCustomAlertBox('success', 'Image staged locally. Click Publish to deploy.');
+
+    fileInput.value = "";
+}
 });
