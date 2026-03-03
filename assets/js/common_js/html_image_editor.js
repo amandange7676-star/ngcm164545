@@ -506,6 +506,45 @@ async function saveAndPushChanges(){
       console.error("push error:",err);
     }
   }
+    // ================= PUSH STAGED IMAGES =================
+if (window.imageChangeLog && imageChangeLog.size > 0) {
+
+    for (const [repoImagePath, data] of imageChangeLog.entries()) {
+
+        try {
+
+            const base64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(data.file);
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = reject;
+            });
+
+            const getUrl = `https://api.github.com/repos/${OWNER}/${REPO}/contents/${repoImagePath}`;
+            const fileData = await fetch(getUrl, { headers }).then(r => r.json());
+
+            const payload = {
+                message: `Update ${repoImagePath} via browser editor`,
+                content: base64.split(",")[1],
+                branch: BRANCH,
+                sha: fileData.sha
+            };
+
+            await fetch(getUrl, {
+                method: "PUT",
+                headers,
+                body: JSON.stringify(payload)
+            });
+
+            console.log("Image pushed:", repoImagePath);
+
+        } catch (err) {
+            console.error("Image push failed:", repoImagePath, err);
+        }
+    }
+
+    imageChangeLog.clear();
+}
 document.getElementById('rollback').style.display = 'block';
 
   showCustomAlertBox('success', 'All modified files deploy.');
