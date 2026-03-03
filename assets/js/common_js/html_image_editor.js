@@ -1,7 +1,7 @@
 // Listen for messages from parent (windows_postmessage.js will post them)
 window.addEventListener("message", (event) => {
     // Only accept messages from parent
-    if (event.origin !== "https://127.0.0.1:8000") return;
+    if (event.origin !== "http://127.0.0.1:8000") return;
 
     // Save feature state
     localStorage.setItem("featureEnabled", event.data.message);
